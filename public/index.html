@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Chat</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+        }
+
+        .container {
+            width: 350px;
+            margin: auto;
+            margin-top: 50px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        #messages {
+            list-style: none;
+            padding: 0;
+            height: 200px;
+            overflow-y: scroll;
+        }
+
+        .my-msg {
+            background: #00bcd4;
+            color: white;
+            padding: 8px;
+            margin: 5px;
+            border-radius: 10px;
+            text-align: right;
+        }
+
+        .other-msg {
+            background: #e0e0e0;
+            padding: 8px;
+            margin: 5px;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .system-msg {
+            text-align: center;
+            color: gray;
+            font-size: 12px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Simple Chat</h2>
+
+    <input id="username" placeholder="Enter name"><br><br>
+
+    <h4>Online Users:</h4>
+    <ul id="users"></ul>
+
+    <ul id="messages"></ul>
+
+    <input id="message" placeholder="Type message">
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let username = "";
+
+// join
+document.getElementById("username").addEventListener("change", function() {
+    username = this.value;
+    socket.emit("join", username);
+});
+
+// send message
+function sendMessage() {
+    const input = document.getElementById("message");
+
+    if (input.value.trim() === "") return;
+
+    socket.emit("chat message", input.value);
+    input.value = "";
+}
+
+// receive chat message
+socket.on("chat message", function(data) {
+    const li = document.createElement("li");
+
+    if (data.user === username) {
+        li.classList.add("my-msg");
+    } else {
+        li.classList.add("other-msg");
+    }
+
+    li.textContent = `[${data.time}] ${data.user}: ${data.text}`;
+    document.getElementById("messages").appendChild(li);
+});
+
+// system messages (join/leave)
+socket.on("system message", function(msg) {
+    const li = document.createElement("li");
+    li.classList.add("system-msg");
+    li.textContent = msg;
+    document.getElementById("messages").appendChild(li);
+});
+
+// user list
+socket.on("user list", function(users) {
+    const ul = document.getElementById("users");
+    ul.innerHTML = "";
+
+    users.forEach(user => {
+        const li = document.createElement("li");
+        li.textContent = user;
+        ul.appendChild(li);
+    });
+});
+</script>
+
+</body>
+</html>
